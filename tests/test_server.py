@@ -9,7 +9,22 @@ import urllib.request
 from http.server import HTTPServer
 from pathlib import Path
 
-from serve_md.server import make_handler
+import pytest
+
+from serve_md.server import _detect_hostname, _find_tailscale, make_handler
+
+
+class _FakePath:
+    """Stand-in for the WSL Tailscale path with a controllable ``exists``."""
+
+    def __init__(self, *, exists: bool) -> None:
+        self._exists = exists
+
+    def exists(self) -> bool:
+        return self._exists
+
+    def __str__(self) -> str:
+        return "/mnt/c/Program Files/Tailscale/tailscale.exe"
 
 
 def _run(server: HTTPServer) -> threading.Thread:
@@ -55,6 +70,35 @@ def test_handler_blocks_path_traversal(tmp_path: Path) -> None:
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_find_tailscale_prefers_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("serve_md.server.shutil.which", lambda name: "/usr/bin/tailscale")
+    assert _find_tailscale() == "/usr/bin/tailscale"
+
+
+def test_find_tailscale_falls_back_to_exe_on_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    found = {"tailscale.exe": "/some/dir/tailscale.exe"}
+    monkeypatch.setattr("serve_md.server.shutil.which", lambda name: found.get(name))
+    assert _find_tailscale() == "/some/dir/tailscale.exe"
+
+
+def test_find_tailscale_uses_wsl_default_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = _FakePath(exists=True)
+    monkeypatch.setattr("serve_md.server.shutil.which", lambda name: None)
+    monkeypatch.setattr("serve_md.server._WSL_TAILSCALE", fake)
+    assert _find_tailscale() == str(fake)
+
+
+def test_find_tailscale_none_when_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("serve_md.server.shutil.which", lambda name: None)
+    monkeypatch.setattr("serve_md.server._WSL_TAILSCALE", _FakePath(exists=False))
+    assert _find_tailscale() is None
+
+
+def test_detect_hostname_localhost_without_tailscale(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("serve_md.server._find_tailscale", lambda: None)
+    assert _detect_hostname() == "localhost"
 
 
 def test_port_in_use_is_detectable() -> None:

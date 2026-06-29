@@ -5,6 +5,7 @@ from __future__ import annotations
 import http.server
 import json
 import mimetypes
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -12,11 +13,34 @@ from .render import render
 
 PORT_SCAN_RANGE = 100
 
+# Default location of the Tailscale CLI installed by the Windows installer,
+# reachable from WSL via the /mnt/c mount when it is not on PATH.
+_WSL_TAILSCALE = Path("/mnt/c/Program Files/Tailscale/tailscale.exe")
+
+
+def _find_tailscale() -> str | None:
+    """Locate a usable Tailscale CLI.
+
+    Prefers a native ``tailscale`` on PATH, then ``tailscale.exe`` on PATH (WSL),
+    and finally the Windows installer's default path. Returns ``None`` if none is
+    found.
+    """
+    for name in ("tailscale", "tailscale.exe"):
+        found = shutil.which(name)
+        if found is not None:
+            return found
+    if _WSL_TAILSCALE.exists():
+        return str(_WSL_TAILSCALE)
+    return None
+
 
 def _detect_hostname() -> str:
     """Return the Tailscale DNS name if available, else ``localhost``."""
+    tailscale = _find_tailscale()
+    if tailscale is None:
+        return "localhost"
     try:
-        out = subprocess.check_output(["tailscale", "status", "--json"], timeout=2)
+        out = subprocess.check_output([tailscale, "status", "--json"], timeout=2)
         name = json.loads(out)["Self"]["DNSName"].rstrip(".")
         return str(name)
     except Exception:
