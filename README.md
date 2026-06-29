@@ -3,8 +3,10 @@
 Render a Markdown file as styled HTML — or serve an HTML file directly — on a
 local web server that auto-refreshes the browser whenever the file changes.
 
-- `.md` files are rendered to a dark-themed, self-contained HTML page
-  (tables, fenced code with syntax highlighting, table of contents, smart quotes).
+- `.md` files are rendered to a self-contained HTML page (tables, fenced code
+  with syntax highlighting, table of contents, smart quotes), with a top-right
+  toggle to switch between dark and light themes. It defaults to your OS
+  preference and remembers your choice.
 - `.html` files are served as-is, with a live-reload snippet injected.
 - Sibling files in the same directory (css, js, images, ...) are served as
   static assets, so relative references in an HTML page resolve. Access is
@@ -14,10 +16,10 @@ local web server that auto-refreshes the browser whenever the file changes.
 
 ## Install
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires [uv](https://docs.astral.sh/uv/). Install straight from GitHub:
 
 ```bash
-uv tool install .
+uv tool install git+https://github.com/andrewleech/serve-md
 ```
 
 Run it from anywhere afterwards:
@@ -26,8 +28,20 @@ Run it from anywhere afterwards:
 serve-md README.md
 ```
 
-To update after pulling changes, re-run `uv tool install .` (or
-`uv tool install . --reinstall`). Remove it with `uv tool uninstall serve-md`.
+Pin to a tag, branch, or commit by appending `@<ref>`:
+
+```bash
+uv tool install git+https://github.com/andrewleech/serve-md@v0.1.0
+```
+
+Update with `uv tool upgrade serve-md` (or re-run the install with
+`--reinstall`). Remove it with `uv tool uninstall serve-md`.
+
+### Install from a local clone
+
+```bash
+uv tool install .            # add --reinstall to update after pulling changes
+```
 
 ### Run without installing
 
