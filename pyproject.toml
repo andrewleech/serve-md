@@ -1,6 +1,6 @@
 [project]
 name = "serve-md"
-version = "0.1.0"
+version = "1.0.0"
 description = "Render a Markdown or HTML file as a live-reloading local web page."
 readme = "README.md"
 requires-python = ">=3.10"
