@@ -52,13 +52,14 @@ uv run serve-md README.md
 ## Usage
 
 ```text
-serve-md [-p PORT] [--host HOST] [--no-browser] file
+serve-md [-p PORT] [--host HOST] [--browser] file
 
   file                  path to a .md or .html file
   -p, --port PORT       port to serve on (default: 57642); if taken, the next
                         free port is used
   --host HOST           address to bind (default: 0.0.0.0)
-  --no-browser          do not open a browser window
+  --browser             open the page in a browser window on start
+                        (off by default)
   -V, --version         show version and exit
 ```
 

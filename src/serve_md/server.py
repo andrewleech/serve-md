@@ -103,7 +103,7 @@ def serve(
     *,
     host: str,
     port: int,
-    open_browser: bool = True,
+    open_browser: bool = False,
 ) -> None:
     """Serve ``file_path`` with live reload until interrupted.
 

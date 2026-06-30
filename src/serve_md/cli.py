@@ -36,9 +36,9 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"address to bind (default: {DEFAULT_HOST})",
     )
     parser.add_argument(
-        "--no-browser",
+        "--browser",
         action="store_true",
-        help="do not open a browser window",
+        help="open the page in a browser window on start (off by default)",
     )
     parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     return parser
@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         file_path,
         host=args.host,
         port=args.port,
-        open_browser=not args.no_browser,
+        open_browser=args.browser,
     )
     return 0
 
