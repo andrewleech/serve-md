@@ -55,7 +55,9 @@ CSS = """
     --muted: #59636e;
 }
 body {
-    max-width: 48em;
+    width: 90%;
+    max-width: none;
+    box-sizing: border-box;
     margin: 2em auto;
     padding: 0 1em;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -63,6 +65,8 @@ body {
     line-height: 1.6;
     color: var(--fg);
     background: var(--bg);
+    user-select: text;
+    -webkit-user-select: text;
 }
 h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; color: var(--heading); }
 h1 { border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
@@ -157,6 +161,66 @@ function _toggleTheme() {
 </script>
 """
 
+CLIPBOARD_JS = """
+<script>
+(function() {
+    function plainText(node, depth) {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+
+        let result = '';
+        for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+                result += child.textContent;
+                continue;
+            }
+            if (child.nodeType !== Node.ELEMENT_NODE) continue;
+
+            if (child.tagName === 'UL' || child.tagName === 'OL') {
+                let number = 1;
+                for (const item of child.children) {
+                    if (item.tagName !== 'LI') continue;
+                    const prefix = child.tagName === 'UL' ? '• ' : `${number++}. `;
+                    const content = Array.from(item.childNodes)
+                        .filter((itemChild) => itemChild.nodeType !== Node.ELEMENT_NODE ||
+                            (itemChild.tagName !== 'UL' && itemChild.tagName !== 'OL'))
+                        .map((itemChild) => plainText(itemChild, depth + 1))
+                        .join('').trim();
+                    result += `${'  '.repeat(depth)}${prefix}${content}\\n`;
+                    for (const nested of item.children) {
+                        if (nested.tagName === 'UL' || nested.tagName === 'OL') {
+                            result += plainText(nested, depth + 1);
+                        }
+                    }
+                }
+                continue;
+            }
+
+            result += plainText(child, depth);
+            if (/^(P|DIV|H[1-6]|BLOCKQUOTE|PRE|TR)$/.test(child.tagName)) result += '\\n';
+        }
+        return result;
+    }
+
+    document.addEventListener('copy', (event) => {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+
+        const container = document.createElement('div');
+        container.append(selection.getRangeAt(0).cloneContents());
+        const html = container.innerHTML;
+        const text = plainText(container, 0).replace(/\\n{3,}/g, '\\n\\n').trimEnd();
+        if (!html || !text) return;
+
+        // Rich-text applications receive native HTML lists and headings. Plain-text
+        // applications receive literal bullets and indentation rather than list markers.
+        event.preventDefault();
+        event.clipboardData.setData('text/html', html);
+        event.clipboardData.setData('text/plain', text);
+    });
+})();
+</script>
+"""
+
 
 def is_html(path: Path) -> bool:
     """Whether ``path`` should be served verbatim rather than rendered."""
@@ -183,6 +247,7 @@ def render_markdown(md_path: Path) -> str:
 <body>
 {THEME_TOGGLE}
 {html_body}
+{CLIPBOARD_JS}
 {RELOAD_JS}
 </body>
 </html>"""
